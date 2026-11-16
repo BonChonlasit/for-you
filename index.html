@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FFE6EE">
+  <title>มีของขวัญมาส่ง</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21C12 21 3 15.5 3 9.2 3 6.3 5.2 4 8 4c1.8 0 3.2 1 4 2.4C12.8 5 14.2 4 16 4c2.8 0 5 2.3 5 5.2C21 15.5 12 21 12 21z' fill='%23DB3F74'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sriracha&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <main id="scenes"></main>
+      <div id="hud-cake" aria-hidden="true"></div>
+      <button id="music-btn" class="candy round" type="button" aria-label="เปิดหรือปิดเพลง" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18.5a2.5 2.5 0 1 1-2.5-2.5c.5 0 1 .1 1.5.3V5l11-2v12.5a2.5 2.5 0 1 1-2.5-2.5c.5 0 1 .1 1.5.3V6.4L10 7.9v10.6z" fill="currentColor"/></svg>
+      </button>
+      <nav id="dev-nav" hidden></nav>
+    </div>
+    <div id="dim" aria-hidden="true"></div>
+    <canvas id="fx" aria-hidden="true"></canvas>
+    <div id="rotate-hint">
+      <div>
+        <div class="rotate-icon" aria-hidden="true">📱</div>
+        <p>หมุน iPad เป็นแนวนอนก่อนนะ</p>
+      </div>
+    </div>
+  </div>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

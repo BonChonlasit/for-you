@@ -1,0 +1,1090 @@
+/* =====================================================================
+   ธีม: ร้านขนมพาสเทล — นมชมพู โรยเม็ดน้ำตาล ครีมเยิ้ม ปุ่มลูกอม
+   ===================================================================== */
+:root {
+  --milk: #FFE6EE;          /* พื้นหลัง: นมชมพู */
+  --frost: #FFFBFD;         /* ครีม: พื้นการ์ด */
+  --berry: #DB3F74;         /* ราสเบอร์รี: ปุ่มหลัก/หัวข้อ */
+  --berry-deep: #A82A55;
+  --glaze: #F27CA3;         /* ซอสสตรอว์เบอร์รีที่เยิ้ม */
+  --cocoa: #5A2E3A;         /* ตัวหนังสือ */
+  --cocoa-soft: #8A5A66;
+  --shadow-pink: #F3BFD0;   /* เงาแบบขนม (ทึบ ไม่เบลอ) */
+  --mint: #AEEAD3;   --mint-deep: #4FB892;
+  --butter: #FFE7A0; --butter-deep: #E5B54A;
+  --lilac: #DFD3FF;  --lilac-deep: #A58AEA;
+  --sky: #CDE9FF;    --sky-deep: #7DB6E6;
+  --peach: #FFD5C2;  --peach-deep: #EE9F7C;
+  --font: 'Mali', 'Leelawadee UI', 'Thonburi', 'Sukhumvit Set', sans-serif;
+  --hand: 'Sriracha', 'Mali', cursive;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--cocoa);
+  background: var(--milk);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; -webkit-appearance: none; appearance: none; margin: 0; }
+button:focus { outline: none; }
+button:focus-visible { outline: 4px dashed var(--berry); outline-offset: 6px; }
+[hidden] { display: none !important; }
+
+/* ---------- เวทีขนาดคงที่ 1200×800 แล้วย่อขยายให้พอดีจอ ---------- */
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 65% 60% at 50% 50%, rgba(255, 255, 255, .62), rgba(255, 255, 255, 0) 72%),
+    var(--sprinkles, none) 0 0 / 320px 320px repeat,
+    var(--milk);
+}
+#stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1200px;
+  height: 800px;
+  transform: translate(-50%, -50%) scale(var(--s, 1));
+}
+#scenes { position: absolute; inset: 0; }
+#fx { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 50; }
+#dim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(46, 14, 30, .66);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease;
+}
+body.lights-off #dim { opacity: 1; }
+
+/* ---------- ฉาก ---------- */
+.scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(.985);
+  transition: opacity .45s ease, transform .45s ease;
+}
+.scene.entered { opacity: 1; transform: none; }
+.scene.leaving { opacity: 0; transform: scale(1.015); pointer-events: none; }
+
+/* ---------- ปุ่มลูกอม ---------- */
+.candy {
+  --c: #FFFFFF;
+  --cs: var(--shadow-pink);
+  position: relative;
+  border: 0;
+  cursor: pointer;
+  padding: 16px 34px;
+  border-radius: 999px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--cocoa);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, .3), rgba(255, 255, 255, 0) 55%), var(--c);
+  box-shadow: 0 7px 0 var(--cs);
+  transition: translate .08s ease, box-shadow .08s ease, opacity .25s ease, filter .25s ease;
+}
+.candy:active:not(:disabled) { translate: 0 5px; box-shadow: 0 2px 0 var(--cs); }
+.candy:disabled { cursor: default; }
+.candy.berry { --c: var(--berry); --cs: var(--berry-deep); color: #FFFFFF; }
+.candy.big { font-size: 30px; padding: 20px 48px; }
+.candy.round {
+  width: 62px;
+  height: 62px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+}
+
+/* ---------- การ์ดครีมเยิ้ม ---------- */
+.drip {
+  position: relative;
+  overflow: hidden;
+  background: var(--frost);
+  border-radius: 40px;
+  box-shadow: 0 12px 0 var(--shadow-pink);
+}
+.drip-band { position: absolute; left: 0; top: 0; pointer-events: none; }
+
+/* ---------- เค้กความคืบหน้า (มุมซ้ายบน) ---------- */
+#hud-cake {
+  position: absolute;
+  left: 34px;
+  top: 26px;
+  width: 92px;
+  height: 92px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  opacity: 0;
+  transition: opacity .4s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+body.hud-on #hud-cake { opacity: 1; }
+.hud-plate {
+  display: block;
+  width: 92px;
+  height: 12px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 4px 0 var(--shadow-pink);
+  flex: none;
+}
+.hud-layer {
+  display: block;
+  flex: none;
+  width: 66px;
+  height: 12px;
+  margin-bottom: 1px;
+  border-radius: 6px;
+  background: var(--lc);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(90, 46, 58, .08);
+  opacity: 0;
+  transform: translateY(-46px);
+  transition: transform .5s cubic-bezier(.3, 1.6, .5, 1), opacity .2s ease;
+}
+.hud-layer.on { opacity: 1; transform: none; }
+
+#music-btn {
+  position: absolute;
+  right: 34px;
+  top: 30px;
+  z-index: 10;
+  color: var(--berry);
+}
+#music-btn svg { width: 30px; height: 30px; }
+#music-btn.off { color: #C9A9B4; }
+#music-btn.off::after {
+  content: '';
+  position: absolute;
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: #C9A9B4;
+  transform: rotate(-45deg);
+}
+
+#dev-nav {
+  position: absolute;
+  left: 20px;
+  bottom: 14px;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 16px;
+}
+#dev-nav button {
+  padding: 4px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--berry);
+  background: #FFFFFF;
+  color: var(--berry);
+  cursor: pointer;
+}
+
+/* ---------- รูป + กรอบแทนรูป ---------- */
+.photo { position: relative; overflow: hidden; background: #F8E3EA; }
+.photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.photo.is-ph {
+  background: var(--ph);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ph-emoji { font-size: 56px; line-height: 1; }
+.ph-file { font-size: 14px; color: rgba(90, 46, 58, .6); }
+
+/* =====================================================================
+   ด่าน 0: ล็อก
+   ===================================================================== */
+.scene-lock {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding: 0 70px;
+}
+.lock-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.lock-title {
+  font-size: 58px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 34px 0 4px;
+  color: var(--berry);
+}
+.lock-sub { font-size: 26px; margin: 0; }
+.lock-msg {
+  font-size: 22px;
+  line-height: 1.55;
+  color: var(--cocoa-soft);
+  min-height: 3.2em;
+  max-width: 440px;
+  margin: 14px 0 0;
+}
+.lock-msg.bump { animation: rise .35s ease both; }
+.lock-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 34px;
+}
+.dots { display: flex; gap: 20px; }
+.dots i {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--berry);
+  transition: background .15s ease, transform .15s ease;
+}
+.dots i.on { background: var(--berry); transform: scale(1.1); }
+.dots.bad { animation: shake .45s ease; }
+.dots.bad i { border-color: #C9A0AE; background: #C9A0AE; }
+.dots.ok i { border-color: var(--mint-deep); background: var(--mint-deep); }
+.keypad { display: grid; grid-template-columns: repeat(3, 100px); gap: 20px 28px; }
+.key {
+  width: 100px;
+  height: 100px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 40px;
+  font-weight: 600;
+  --c: var(--frost);
+}
+.key-fn { font-size: 30px; --c: #FFEFF4; }
+
+/* กล่องของขวัญ */
+.gift {
+  position: relative;
+  width: 260px;
+  height: 240px;
+  animation: wobble 4s ease-in-out 1.5s infinite;
+}
+.gift-shadow {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -14px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(219, 63, 116, .16);
+}
+.gift-body {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 0;
+  height: 156px;
+  border-radius: 0 0 22px 22px;
+  background:
+    linear-gradient(var(--butter), var(--butter)) 50% 0 / 36px 100% no-repeat,
+    radial-gradient(circle, rgba(255, 255, 255, .9) 0 5px, transparent 6px) 50% 6px / 34px 34px,
+    var(--glaze);
+}
+.gift-lid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 150px;
+  height: 58px;
+  border-radius: 16px;
+  background:
+    linear-gradient(var(--butter), var(--butter)) 50% 0 / 36px 100% no-repeat,
+    var(--berry);
+  box-shadow: 0 6px 0 rgba(168, 42, 85, .35);
+  transition: transform .8s cubic-bezier(.3, 1.4, .5, 1);
+  z-index: 2;
+}
+.bow { position: absolute; left: 50%; bottom: 54px; width: 0; height: 0; }
+.bow i {
+  position: absolute;
+  bottom: -6px;
+  width: 64px;
+  height: 46px;
+  border: 13px solid var(--butter);
+  border-radius: 50%;
+}
+.bow i:nth-child(1) { right: -2px; transform: rotate(-22deg); }
+.bow i:nth-child(2) { left: -2px; transform: rotate(22deg); }
+.bow b {
+  position: absolute;
+  left: -15px;
+  bottom: -10px;
+  width: 30px;
+  height: 26px;
+  border-radius: 10px;
+  background: var(--butter-deep);
+}
+.gift.open { animation: none; }
+.gift.open .gift-lid { transform: translateY(-150px) rotate(-16deg); }
+
+/* =====================================================================
+   ด่าน 1: เปิดเรื่อง
+   ===================================================================== */
+.scene-intro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 130px;
+  cursor: pointer;
+}
+.intro-box {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+}
+.intro-line {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 920px;
+}
+.intro-line.in, .chatbar.in { animation: rise .6s cubic-bezier(.2, .9, .3, 1.2) both; }
+.intro-line.out, .chatbar.out { animation: sink .38s ease-in both; }
+.intro-go { animation: rise .5s ease both; }
+.tap-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  margin: 0;
+  font-size: 20px;
+  color: var(--cocoa-soft);
+  opacity: 0;
+  animation: fadein .6s ease 3s forwards;
+}
+.chatbar {
+  width: 660px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px 0 38px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 0 var(--shadow-pink);
+}
+.chat-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 34px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.caret {
+  width: 3px;
+  height: 42px;
+  margin-left: 3px;
+  background: var(--berry);
+  animation: blink 1s steps(1) infinite;
+}
+.chat-send {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--berry);
+  color: #FFFFFF;
+}
+.chat-send svg { width: 30px; height: 30px; }
+.chat-send.wiggle { animation: wiggle .5s ease-in-out 2; }
+
+/* =====================================================================
+   ด่าน 2: ควิซ
+   ===================================================================== */
+.q-wrap {
+  position: absolute;
+  inset: 0;
+  padding: 120px 110px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.q-card {
+  min-height: 252px;
+  padding: 70px 60px 36px;
+  text-align: center;
+}
+.q-card.swap .q-text { animation: rise .45s ease both; }
+.q-title { font-size: 24px; font-weight: 600; color: var(--berry); margin: 0; }
+.q-meta { font-size: 20px; color: var(--cocoa-soft); margin: 10px 0 10px; }
+.q-text { font-size: 44px; font-weight: 700; line-height: 1.45; margin: 0; }
+.q-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 32px; }
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 110px;
+  padding: 18px 30px;
+  border-radius: 32px;
+  text-align: left;
+  font-size: 30px;
+  animation: rise .45s ease both;
+}
+.choice .mark {
+  flex: none;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .78);
+  font-size: 26px;
+  font-weight: 700;
+}
+.choice.c0 { --c: var(--lilac);  --cs: var(--lilac-deep); }
+.choice.c1 { --c: var(--sky);    --cs: var(--sky-deep); }
+.choice.c2 { --c: var(--butter); --cs: var(--butter-deep); }
+.choice.c3 { --c: var(--peach);  --cs: var(--peach-deep); }
+.choice.wrong { animation: shake .45s ease; opacity: .45; filter: grayscale(.85); }
+.choice.right { --c: var(--mint); --cs: var(--mint-deep); animation: boing .5s ease; }
+.q-choices-box { position: relative; }
+.q-toast {
+  position: absolute;
+  left: 50%;
+  top: -36px;
+  transform: translate(-50%, 10px);
+  padding: 12px 30px;
+  border-radius: 999px;
+  background: var(--cocoa);
+  color: #FFFFFF;
+  font-size: 24px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  z-index: 4;
+}
+.q-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.q-pop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 230, 238, .55);
+}
+.q-pop-card {
+  width: 780px;
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  padding: 34px 40px;
+  border-radius: 40px;
+  background: var(--frost);
+  box-shadow: 0 12px 0 var(--shadow-pink);
+  animation: popIn .45s cubic-bezier(.3, 1.5, .5, 1) both;
+}
+.q-photo { flex: none; width: 210px; height: 210px; border-radius: 26px; }
+.q-photo .ph-emoji { font-size: 64px; }
+.q-pop-emoji { flex: none; font-size: 110px; line-height: 1; }
+.q-pop-body { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; }
+.q-pop-text { font-size: 34px; font-weight: 600; line-height: 1.5; margin: 0; }
+.q-result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+}
+.stamp {
+  width: 250px;
+  height: 250px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  border: 10px double var(--berry);
+  color: var(--berry);
+  font-family: var(--hand);
+  font-size: 50px;
+  line-height: 1.2;
+  padding: 20px;
+  transform: rotate(-12deg);
+  animation: stampIn .5s cubic-bezier(.3, 1.6, .5, 1) both;
+}
+.q-score { font-size: 34px; font-weight: 700; margin: 0; }
+.q-rank { font-size: 28px; margin: 0 0 22px; color: var(--cocoa-soft); }
+
+/* =====================================================================
+   ด่าน 3: เกมจับคู่ (หัวใจ)
+   ===================================================================== */
+.scene-memory {
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  align-items: center;
+  gap: 36px;
+  padding: 120px 56px 50px;
+}
+.mem-panel {
+  padding: 74px 32px 36px;
+  text-align: center;
+}
+.mem-title { font-size: 36px; font-weight: 700; line-height: 1.35; margin: 0 0 12px; }
+.mem-panel-body { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mem-hint { font-size: 21px; line-height: 1.6; color: var(--cocoa-soft); margin: 0 0 8px; }
+.mem-stat { font-size: 24px; margin: 0; }
+.mem-stat b { color: var(--berry); font-size: 30px; }
+.mem-done { font-size: 30px; font-weight: 700; color: var(--berry); line-height: 1.45; margin: 0; }
+.mem-panel-body .candy { margin-top: 18px; font-size: 26px; padding: 18px 30px; white-space: nowrap; }
+.mem-board {
+  display: grid;
+  grid-template-columns: repeat(5, 128px);
+  grid-template-rows: repeat(4, 128px);
+  gap: 14px;
+  justify-content: center;
+}
+.mem-card {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  perspective: 900px;
+}
+.mem-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform .5s cubic-bezier(.3, 1.3, .5, 1);
+}
+.mem-back, .mem-front {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.mem-back {
+  background: var(--heart-white, none) center / 46px no-repeat, var(--glaze);
+  box-shadow: inset 0 0 0 6px rgba(255, 255, 255, .5), 0 7px 0 #E0628D;
+}
+.mem-front {
+  transform: rotateY(180deg);
+  border: 6px solid #FFFFFF;
+  background: #FFFFFF;
+  box-shadow: 0 7px 0 var(--shadow-pink);
+}
+.mem-front .photo { position: absolute; inset: 0; border-radius: 18px; }
+.mem-front .ph-emoji { font-size: 52px; }
+.mem-front .ph-file { display: none; }
+.mem-card.flipped .mem-inner { transform: rotateY(180deg); }
+.mem-card.matched .mem-front { border-color: var(--mint); box-shadow: 0 7px 0 var(--mint-deep); }
+.mem-card.matched { animation: boing .5s ease; cursor: default; }
+.mem-tip { display: grid; place-items: center; }
+.mem-tip svg { width: 92px; height: 92px; fill: none; stroke: #E7A9BC; stroke-width: 1.6; stroke-dasharray: 2.5 2.5; transition: fill .4s ease, stroke .4s ease; }
+.mem-tip.on svg { fill: var(--berry); stroke: var(--berry); stroke-dasharray: none; animation: beat 1.1s ease-in-out infinite; }
+
+/* =====================================================================
+   ด่าน 4: แกลเลอรีโพลารอยด์
+   ===================================================================== */
+.gal-head { position: absolute; left: 0; right: 0; top: 36px; text-align: center; }
+.gal-head h2 { font-size: 46px; font-weight: 700; margin: 0; line-height: 1.3; }
+.gal-head p { font-size: 22px; margin: 4px 0 0; color: var(--cocoa-soft); }
+.gal-table { position: absolute; left: 60px; top: 160px; width: 1080px; height: 520px; }
+.polaroid {
+  position: absolute;
+  padding: 12px 12px 0;
+  border: 0;
+  border-radius: 6px;
+  background: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 9px 0 rgba(219, 63, 116, .16);
+  transform: rotate(var(--r, 0deg));
+  transition: transform .2s ease;
+}
+.polaroid:active { transform: rotate(var(--r, 0deg)) scale(.96); }
+.polaroid .photo { width: 100%; aspect-ratio: 1 / 1; border-radius: 3px; }
+.polaroid .ph-emoji { font-size: 60px; }
+.pol-date {
+  display: block;
+  padding: 8px 0 10px;
+  font-family: var(--hand);
+  font-size: 21px;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tape {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  width: 92px;
+  height: 28px;
+  margin-left: -46px;
+  transform: rotate(-4deg);
+  background: rgba(255, 213, 110, .7);
+  z-index: 1;
+}
+.seen-heart {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  width: 44px;
+  height: 44px;
+  fill: var(--berry);
+  animation: popIn .35s cubic-bezier(.3, 1.6, .5, 1) both;
+  z-index: 2;
+}
+.gal-foot {
+  position: absolute;
+  right: 60px;
+  bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  z-index: 3;
+}
+.gal-prog { font-size: 22px; color: var(--cocoa-soft); }
+.gal-next.ready { animation: boing .6s ease 2; }
+.viewer { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; }
+.viewer-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 230, 238, .84);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity .25s ease;
+}
+.viewer.show .viewer-bg { opacity: 1; }
+.vcard {
+  position: relative;
+  width: 470px;
+  height: 572px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  perspective: 1600px;
+  opacity: 0;
+  transform: scale(.6) rotate(-6deg);
+  transition: transform .45s cubic-bezier(.3, 1.4, .5, 1), opacity .25s ease;
+}
+.viewer.show .vcard { opacity: 1; transform: none; }
+.vcard-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform .7s cubic-bezier(.3, 1.2, .4, 1);
+}
+.vcard.flipped .vcard-inner { transform: rotateY(180deg); }
+.vface {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  box-shadow: 0 16px 0 rgba(219, 63, 116, .18);
+}
+.vfront { padding: 22px 22px 0; }
+.vfront .photo { width: 100%; aspect-ratio: 1 / 1; border-radius: 4px; }
+.vfront .ph-emoji { font-size: 120px; }
+.vfront .ph-file { font-size: 18px; }
+.vdate { display: block; padding: 20px 0; font-family: var(--hand); font-size: 32px; text-align: center; }
+.vback {
+  transform: rotateY(180deg);
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 51px, #F7D5DF 51px 53px) 0 30px / 100% 100% no-repeat,
+    #FFFDF7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 46px;
+  text-align: center;
+}
+.vback-date { font-size: 24px; font-weight: 600; color: var(--berry); margin: 0; }
+.vback-cap { font-family: var(--hand); font-size: 36px; line-height: 1.6; margin: 0; }
+.vback svg { width: 54px; height: 54px; fill: var(--glaze); }
+.viewer-hint {
+  position: absolute;
+  bottom: 30px;
+  margin: 0;
+  font-size: 22px;
+  color: var(--cocoa-soft);
+  opacity: 0;
+  transition: opacity .3s ease .2s;
+}
+.viewer.show .viewer-hint { opacity: 1; }
+.viewer-x { position: absolute; top: 30px; right: 36px; }
+
+/* =====================================================================
+   ด่าน 5: จดหมาย
+   ===================================================================== */
+.env-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  transition: opacity .45s ease, transform .45s ease;
+}
+.env-stage.away { opacity: 0; transform: scale(.94); pointer-events: none; }
+.envelope { position: relative; width: 580px; height: 370px; margin-top: 110px; perspective: 1200px; }
+.env-back { position: absolute; inset: 0; border-radius: 20px; background: #EE8FB0; box-shadow: 0 12px 0 var(--shadow-pink); }
+.env-letter {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  top: 18px;
+  height: 320px;
+  padding: 34px 40px;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 39px, #F7D5DF 39px 41px) 0 80px / 100% 100% no-repeat,
+    var(--frost);
+  font-family: var(--hand);
+  font-size: 30px;
+  color: var(--berry);
+  z-index: 2;
+  transition: transform .9s cubic-bezier(.3, 1.1, .4, 1);
+}
+.env-front {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 20px;
+  background: #FFC3D5;
+  clip-path: polygon(0 0, 50% 54%, 100% 0, 100% 100%, 0 100%);
+}
+.env-flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 222px;
+  z-index: 4;
+  background: #FFAFC7;
+  clip-path: polygon(0 9%, 1.2% 3%, 3.4% 0, 96.6% 0, 98.8% 3%, 100% 9%, 50% 100%);
+  transform-origin: 50% 0;
+  transition: transform .6s ease;
+}
+.envelope.open .env-flap { transform: rotateX(180deg); }
+.envelope.flap-back .env-flap { z-index: 1; }
+.envelope.out .env-letter { transform: translateY(-210px); }
+.seal {
+  position: absolute;
+  left: 50%;
+  top: 222px;
+  width: 104px;
+  height: 104px;
+  margin: -52px 0 0 -52px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #F56C9A, var(--berry) 62%, var(--berry-deep));
+  box-shadow: 0 6px 0 var(--berry-deep);
+  z-index: 5;
+  animation: beat 1.8s ease-in-out infinite;
+}
+.seal svg { width: 50px; height: 50px; fill: #FFFFFF; }
+.envelope.open .seal { animation: sealOff .35s ease forwards; pointer-events: none; }
+.env-hint { font-size: 26px; margin: 0; color: var(--cocoa-soft); transition: opacity .3s ease; }
+.env-hint.hide { opacity: 0; }
+.letter-sheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 860px;
+  height: 690px;
+  margin: -345px 0 0 -430px;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 70px 34px;
+  border-radius: 28px;
+  background: var(--frost);
+  box-shadow: 0 14px 0 var(--shadow-pink);
+  cursor: pointer; /* iPad จะส่ง click ให้ div ก็ต่อเมื่อมี cursor: pointer */
+  animation: sheetIn .6s cubic-bezier(.3, 1.2, .4, 1) both;
+}
+.letter-greet { font-family: var(--hand); font-size: 38px; color: var(--berry); margin: 0 0 14px; }
+.letter-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  font-family: var(--hand);
+  font-size: 29px;
+  line-height: 52px;
+  padding-right: 8px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 50px, #F7D5DF 50px 52px);
+  background-attachment: local;
+}
+.letter-scroll p { margin: 0 0 52px; min-height: 52px; text-indent: 2em; }
+.letter-sign { text-align: right; margin-top: -26px; }
+.letter-sign p { margin: 0; text-indent: 0; }
+.letter-sign .sig { font-size: 40px; color: var(--berry); }
+.letter-done { display: block; margin: 26px auto 10px; font-family: var(--font); line-height: 1.3; }
+.letter-skip { font-size: 18px; color: var(--cocoa-soft); text-align: center; margin: 12px 0 0; }
+
+/* =====================================================================
+   ด่าน 6: คำถามสำคัญ
+   ===================================================================== */
+.scene-ask {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.ask-face { font-size: 140px; line-height: 1.1; }
+.ask-q { font-size: 58px; font-weight: 700; line-height: 1.4; margin: 18px 0 0; max-width: 1000px; }
+.ask-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+  min-height: 170px;
+  margin-top: 26px;
+}
+.ask-yes {
+  font-size: 36px;
+  padding: 24px 58px;
+  scale: var(--grow, 1);
+  transition: scale .35s cubic-bezier(.3, 1.6, .5, 1), translate .08s ease, box-shadow .08s ease;
+  z-index: 2;
+}
+.ask-no { font-size: 30px; padding: 20px 40px; white-space: nowrap; }
+.ask-no.free {
+  position: absolute;
+  margin: 0;
+  z-index: 3;
+  transition: left .38s cubic-bezier(.3, 1.3, .5, 1), top .38s cubic-bezier(.3, 1.3, .5, 1), opacity .4s ease, scale .4s ease;
+}
+.ask-no.gone { opacity: 0; scale: .2; pointer-events: none; }
+.ask-note { font-size: 24px; color: var(--cocoa-soft); margin: 0; min-height: 1.5em; }
+
+/* =====================================================================
+   ด่าน 7: เค้ก (ไฮไลต์)
+   ===================================================================== */
+.scene-cake {
+  display: grid;
+  grid-template-columns: 620px 1fr;
+  align-items: center;
+  column-gap: 26px;
+  padding: 0 70px 0 30px;
+}
+.cake-wrap { position: relative; width: 600px; height: 600px; margin-top: 70px; }
+.cake-wrap > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.scene-cake.party .cake-wrap { animation: boing .7s ease; cursor: pointer; }
+.flame-slot {
+  position: absolute;
+  width: 64px;
+  height: 116px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform: translate(-50%, -100%);
+}
+.flame-slot:disabled { cursor: default; }
+.flame {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 26px;
+  height: 48px;
+  margin-left: -13px;
+  transform-origin: 50% 100%;
+  transform: rotate(var(--lean, 0deg)) scaleY(var(--sy, 1));
+  transition: transform .12s ease-out;
+}
+.flame i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 46% 46% / 64% 64% 36% 36%;
+  background: radial-gradient(ellipse 50% 48% at 50% 74%, #FFFFFF 0 22%, #FFF3B8 36%, #FFC34D 60%, #FF8A3D 82%, rgba(255, 138, 61, 0) 100%);
+  transform-origin: 50% 100%;
+  animation: flicker var(--fd, .9s) ease-in-out infinite alternate;
+}
+.glow {
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  width: 92px;
+  height: 92px;
+  margin-left: -46px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 92, .42), rgba(255, 196, 92, 0) 64%);
+  pointer-events: none;
+  transition: opacity .5s ease;
+  animation: glow 1.8s ease-in-out infinite alternate;
+}
+.flame-slot.out .flame { transform: translateY(8px) scale(0); transition: transform .3s ease-in; }
+.flame-slot.out .glow { animation: none; opacity: 0; }
+.flame-slot.nudge:not(.out) .flame i { animation-duration: .35s; }
+.smoke {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: rgba(150, 128, 140, .5);
+  filter: blur(2px);
+  pointer-events: none;
+  animation: smoke 1.8s ease-out both;
+}
+.cake-side { display: flex; flex-direction: column; align-items: flex-start; gap: 26px; }
+.cake-title { font-size: 46px; font-weight: 700; line-height: 1.4; margin: 0; }
+.mic-btn { display: inline-flex; align-items: center; gap: 14px; }
+.mic-btn svg { width: 34px; height: 34px; flex: none; }
+.meter {
+  width: 100%;
+  max-width: 420px;
+  height: 28px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 3px #F7C9D7;
+}
+.meter i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8FE0C3, #FFD66B 55%, #FF7BA6);
+  transition: width .08s linear;
+}
+.cake-status { font-size: 24px; line-height: 1.55; color: var(--cocoa-soft); margin: 0; }
+.hb { font-size: 82px; font-weight: 700; line-height: 1.08; margin: 0; letter-spacing: 1px; }
+.hb-word { display: block; white-space: nowrap; }
+.hb-ch {
+  display: inline-block;
+  color: var(--col);
+  text-shadow: 0 5px 0 #FFFFFF;
+  animation: hbIn .7s cubic-bezier(.3, 1.7, .5, 1) both;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.hb-name {
+  font-family: var(--hand);
+  font-size: 60px;
+  line-height: 1.3;
+  color: var(--berry);
+  margin: 0;
+  animation: rise .6s ease 1.2s both;
+}
+.hb-wish {
+  font-size: 28px;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+  animation: rise .6s ease 1.8s both;
+}
+.hb-replay { animation: rise .6s ease 2.6s both; }
+
+/* ---------- แนวตั้ง ---------- */
+#rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  background: var(--milk);
+  font-size: 26px;
+}
+body.portrait #rotate-hint { display: grid; }
+.rotate-icon { font-size: 80px; animation: turn 2.2s ease-in-out infinite; }
+
+/* ---------- คีย์เฟรม ---------- */
+@keyframes rise { from { opacity: 0; transform: translateY(28px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes sink { to { opacity: 0; transform: translateY(-20px) scale(.98); } }
+@keyframes fadein { to { opacity: 1; } }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-14px); }
+  40% { transform: translateX(12px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(5px); }
+}
+@keyframes wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg) scale(1.1); } 75% { transform: rotate(14deg) scale(1.1); } }
+@keyframes boing { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 70% { transform: scale(.97); } 100% { transform: scale(1); } }
+@keyframes popIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes stampIn {
+  0% { opacity: 0; transform: rotate(-12deg) scale(2.3); }
+  60% { opacity: 1; transform: rotate(-12deg) scale(.92); }
+  100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+}
+@keyframes beat { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.16); } 60% { transform: scale(.97); } }
+@keyframes wobble { 0%, 78%, 100% { transform: rotate(0); } 84% { transform: rotate(-4deg); } 90% { transform: rotate(4deg); } 95% { transform: rotate(-2deg); } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes sealOff { to { opacity: 0; transform: scale(1.6); } }
+@keyframes sheetIn { from { opacity: 0; transform: translateY(80px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes flicker {
+  0% { transform: scale(1, 1) skewX(0deg); }
+  33% { transform: scale(.94, 1.07) skewX(2deg); }
+  66% { transform: scale(1.05, .95) skewX(-2deg); }
+  100% { transform: scale(.97, 1.04) skewX(1deg); }
+}
+@keyframes glow { from { opacity: .7; transform: scale(.94); } to { opacity: 1; transform: scale(1.06); } }
+@keyframes smoke {
+  0% { opacity: .9; transform: translate(0, 0) scale(.6); }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), -120px) scale(2.8); }
+}
+@keyframes hbIn { from { opacity: 0; transform: translateY(-90px) scale(.4) rotate(-20deg); } to { opacity: 1; transform: none; } }
+@keyframes turn { 0%, 20% { transform: rotate(0); } 50%, 70% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
