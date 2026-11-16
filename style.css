@@ -316,34 +316,8 @@ body.cam-on #app { background: #2E1E26; }
 }
 .cam-guide.seen .hg-line { stroke: #FFD6E7; stroke-dasharray: none; stroke-width: .6; }
 .cam-guide.done { opacity: 0; }
-.cam-legend {
-  position: absolute;
-  left: 50%;
-  bottom: 22px;
-  display: flex;
-  gap: 10px;
-  transform: translateX(-50%);
-}
-.cam-leg {
-  min-width: 112px;
-  white-space: nowrap;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 12px 9px;
-  border-radius: 22px;
-  background: rgba(255, 251, 253, .86);
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-align: center;
-  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
-}
-.cam-leg b { font-size: 30px; font-weight: 400; line-height: 1.15; }
-.cam-leg small { font-size: 15px; font-weight: 500; color: var(--cocoa-soft); }
-.cam-leg.on { background: #FFFFFF; box-shadow: 0 6px 0 var(--glaze); transform: translateY(-8px) scale(1.06); }
-.cam-tools { position: absolute; right: 26px; bottom: 26px; display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
-.cam-tool { font-size: 18px; padding: 10px 16px; white-space: nowrap; }
+.cam-tools { position: absolute; right: 30px; bottom: 34px; display: flex; flex-direction: column; gap: 16px; }
+.cam-tool { --c: rgba(255, 251, 253, .9); font-size: 26px; }
 .cam-tool[aria-pressed="true"] { --c: var(--lilac); --cs: var(--lilac-deep); }
 .cam-skip { position: absolute; left: 30px; bottom: 36px; color: #FFFFFF; text-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
 .cam-success {
@@ -379,22 +353,6 @@ body.cam-on #app { background: #2E1E26; }
 .cam-success-body h2 { font-size: 40px; font-weight: 700; line-height: 1.35; margin: 0; color: var(--berry); }
 .cam-success-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .cam-save { font-size: 22px; padding: 14px 26px; text-decoration: none; }
-.cam-clean-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 30px;
-  margin: 0;
-  padding: 8px 20px;
-  border-radius: 999px;
-  background: rgba(46, 30, 38, .55);
-  color: #FFFFFF;
-  font-size: 18px;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-50%);
-  transition: opacity .4s ease;
-}
-.cam-clean-hint.show { opacity: 1; }
 body.cam-clean .cam-ui,
 body.cam-clean .cam-success,
 body.cam-clean #music-btn { opacity: 0; pointer-events: none; }
@@ -558,17 +516,6 @@ body.cam-clean .cam-ui > * { pointer-events: none; }
 .intro-line.in, .chatbar.in { animation: rise .6s cubic-bezier(.2, .9, .3, 1.2) both; }
 .intro-line.out, .chatbar.out { animation: sink .38s ease-in both; }
 .intro-go { animation: rise .5s ease both; }
-.tap-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 40px;
-  margin: 0;
-  font-size: 20px;
-  color: var(--cocoa-soft);
-  opacity: 0;
-  animation: fadein .6s ease 3s forwards;
-}
 .chatbar {
   width: 660px;
   height: 96px;
@@ -858,7 +805,6 @@ body.cam-clean .cam-ui > * { pointer-events: none; }
   gap: 24px;
   z-index: 3;
 }
-.gal-prog { font-size: 22px; color: var(--cocoa-soft); }
 .gal-next.ready { animation: boing .6s ease 2; }
 .viewer { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; }
 .viewer-bg {
@@ -923,16 +869,6 @@ body.cam-clean .cam-ui > * { pointer-events: none; }
 .vback-date { font-size: 24px; font-weight: 600; color: var(--berry); margin: 0; }
 .vback-cap { font-family: var(--hand); font-size: 36px; line-height: 1.6; margin: 0; }
 .vback svg { width: 54px; height: 54px; fill: var(--glaze); }
-.viewer-hint {
-  position: absolute;
-  bottom: 30px;
-  margin: 0;
-  font-size: 22px;
-  color: var(--cocoa-soft);
-  opacity: 0;
-  transition: opacity .3s ease .2s;
-}
-.viewer.show .viewer-hint { opacity: 1; }
 .viewer-x { position: absolute; top: 30px; right: 36px; }
 
 /* =====================================================================
@@ -1047,7 +983,6 @@ body.cam-clean .cam-ui > * { pointer-events: none; }
 .letter-sign p { margin: 0; text-indent: 0; }
 .letter-sign .sig { font-size: 40px; color: var(--berry); }
 .letter-done { display: block; margin: 26px auto 10px; font-family: var(--font); line-height: 1.3; }
-.letter-skip { font-size: 18px; color: var(--cocoa-soft); text-align: center; margin: 12px 0 0; }
 
 /* =====================================================================
    ด่าน 6: คำถามสำคัญ
@@ -1204,7 +1139,25 @@ body.cam-clean .cam-ui > * { pointer-events: none; }
   white-space: pre-line;
   animation: rise .6s ease 1.8s both;
 }
-.hb-replay { animation: rise .6s ease 2.6s both; }
+/* ภาพปิดท้าย: เค้กหลบไป แล้วคอลลาจลอยขึ้นมาเหมือนสติกเกอร์บนหน้าสมุด */
+.scene-cake .cake-wrap,
+.scene-cake .cake-side { transition: opacity .7s ease, transform .7s ease; }
+.scene-cake.finale-reveal .cake-wrap { opacity: 0; transform: translateX(-60px) scale(.9); pointer-events: none; }
+.scene-cake.finale-reveal .cake-side { opacity: 0; transform: translateX(60px) scale(.9); pointer-events: none; }
+.final { position: absolute; inset: 0; display: grid; place-items: center; cursor: pointer; }
+.final-img {
+  display: block;
+  width: 1000px;
+  max-height: 740px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 0 rgba(219, 63, 116, .13));
+  -webkit-user-drag: none;
+  animation: finalIn 1.1s cubic-bezier(.3, 1.35, .5, 1) .25s both;
+}
+@keyframes finalIn {
+  from { opacity: 0; transform: translateY(46px) scale(.84) rotate(-3deg); }
+  to { opacity: 1; transform: none; }
+}
 
 /* ---------- แนวตั้ง ---------- */
 #rotate-hint {

@@ -172,7 +172,7 @@
     const { h, C, fill, Sound, Music, FX, HEART, addDrip } = kit;
     const K = C.camera || {};
     const holdNeed = Math.max(0.2, Number(K.holdSeconds) || 0.8);
-    const fogReturn = Math.max(3, Number(K.fogReturnSeconds) || 18);
+    const fogReturn = Math.max(0, Number(K.fogReturnSeconds) || 0); // 0 = เช็ดแล้วไม่กลับมา
     const app = document.getElementById('app');
 
     let alive = true, stream = null, landmarker = null, mpFailed = false, raf = 0;
@@ -191,7 +191,7 @@
     const skipStart = h('button', { class: 'cam-skip-inline', type: 'button', hidden: true, onclick: () => finish() }, 'ข้ามด่านนี้');
     const startCard = h('div', { class: 'cam-start drip' },
       h('h1', { class: 'cam-title' }, fill(K.title || 'กระจกบานนี้ขึ้นฝ้าอยู่')),
-      h('p', { class: 'cam-sub' }, fill(K.subtitle || '')),
+      K.subtitle ? h('p', { class: 'cam-sub' }, fill(K.subtitle)) : null,
       startBtn, startNote, skipStart);
 
     /* ----- หน้าตอนเปิดกล้อง ----- */
@@ -201,26 +201,14 @@
       html: `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="camHeartClip"><rect x="0" y="24" width="24" height="0"/></clipPath></defs><path class="hg-fill" clip-path="url(#camHeartClip)" d="${HEART}"/><path class="hg-line" d="${HEART}"/></svg>`
     });
     const guideRect = guide.querySelector('rect');
-    const LEGEND = [
-      ['open', '✋', 'แบมือโบก', 'ขนมร่วง'],
-      ['point', '☝️', 'ชี้นิ้ว', 'วาดเส้นแสง'],
-      ['peace', '✌️', 'ชูสองนิ้ว', 'ดาววิ้งๆ'],
-      ['fist', '✊', 'กำแล้วแบ', 'พลุหัวใจ'],
-      ['pinch', '🫰', 'มินิฮาร์ท', 'หัวใจลอย'],
-      ['heart', '🫶', 'หัวใจกลางจอ', 'ผ่านด่าน']
-    ];
-    const legendEls = {};
-    const legend = h('div', { class: 'cam-legend' }, LEGEND.map(([id, emo, how, what]) => {
-      legendEls[id] = h('div', { class: 'cam-leg' }, h('b', { 'aria-hidden': 'true' }, emo), h('span', {}, how), h('small', {}, what));
-      return legendEls[id];
-    }));
-    const btnTech = h('button', { class: 'candy cam-tool', type: 'button', 'aria-pressed': 'false' }, '✨ โหมดล้ำ');
-    const btnClip = h('button', { class: 'candy cam-tool', type: 'button' }, '🎬 ถ่ายคลิป');
+    // ปุ่มไอคอนล้วน: ✨ โชว์โครงมือเรืองแสง / 🎬 ซ่อนปุ่มทั้งหมดไว้ถ่ายคลิป (แตะจอเพื่อให้กลับมา)
+    const btnTech = h('button', { class: 'candy round cam-tool', type: 'button', 'aria-pressed': 'false', 'aria-label': 'โหมดล้ำ', title: 'โหมดล้ำ' }, '✨');
+    const btnClip = h('button', { class: 'candy round cam-tool', type: 'button', 'aria-label': 'ถ่ายคลิป', title: 'ถ่ายคลิป' }, '🎬');
     const skipBtn = h('button', { class: 'cam-skip', type: 'button', hidden: true, onclick: () => finish() }, 'ข้ามด่านนี้');
-    const ui = h('div', { class: 'cam-ui', hidden: true }, chip, guide, legend, h('div', { class: 'cam-tools' }, btnTech, btnClip), skipBtn);
+    const ui = h('div', { class: 'cam-ui', hidden: true }, chip, guide, h('div', { class: 'cam-tools' }, btnTech, btnClip), skipBtn);
     const success = h('div', { class: 'cam-success', hidden: true });
-    const cleanHint = h('p', { class: 'cam-clean-hint' }, 'แตะจอเพื่อโชว์ปุ่ม');
-    el.append(startCard, ui, success, cleanHint);
+    chip.hidden = true;
+    el.append(startCard, ui, success);
     addDrip(startCard);
 
     // เริ่มโหลดระบบจับมือตั้งแต่ตอนนี้ จะได้พร้อมตอนกดเปิดกล้อง
@@ -369,7 +357,7 @@
       if (!fog) return;
       if (passed) {
         for (let i = 0; i < fog.length; i++) fog[i] = Math.max(0, fog[i] - dt * 1.4);
-      } else {
+      } else if (fogReturn > 0) {
         const inc = dt / fogReturn;
         for (let i = 0; i < fog.length; i++) fog[i] = Math.min(1, fog[i] + inc);
       }
@@ -582,7 +570,6 @@
       setTimeout(() => FX.rain(4, 70), 450);
       guide.classList.add('done');
       chip.hidden = true;
-      legend.hidden = true;
       setTimeout(showSuccess, 1600);
     }
     function takeSnapshot() {
@@ -743,9 +730,10 @@
       }
     }
 
-    /* ----- ป้ายบอก / ปุ่ม ----- */
+    /* ----- ป้าย (โชว์เฉพาะตอนมีปัญหา) / ปุ่ม ----- */
     function say(t) {
-      if (chip.textContent === t) return;
+      chip.hidden = !t;
+      if (!t || chip.textContent === t) return;
       chip.textContent = t;
       chip.classList.remove('bump');
       void chip.offsetWidth;
@@ -757,20 +745,15 @@
       guideRect.setAttribute('y', (24 - 24 * p).toFixed(2));
       guideRect.setAttribute('height', (24 * p).toFixed(2));
       guide.classList.toggle('seen', !!heartNow);
-      if (!landmarker) say(mpFailed ? 'โหลดระบบจับมือไม่สำเร็จ ลองใช้นิ้วลากบนจอเพื่อเช็ดฝ้านะ' : 'กำลังเตรียมระบบจับมือ…');
-      else if (heartNow && heartNow.inside) say(fill(K.holding || 'ค้างไว้แป๊บนึง…'));
-      else if (heartNow) say('ขยับหัวใจมาตรงกลางจออีกนิด');
-      else if (clearedFrac < 0.25 && now - startedAt < 9000) say(fill(K.wipeHint || 'โบกมือไปมาเพื่อเช็ดฝ้า'));
-      else say(fill(K.heartHint || 'ทำมือรูปหัวใจตรงกลางจอ'));
-      const active = new Set(tracks.filter((t) => t.hand).map((t) => t.gesture));
-      for (const id in legendEls) legendEls[id].classList.toggle('on', id === 'heart' ? !!heartNow : active.has(id));
+      // ไม่มีข้อความสอน มีแค่แจ้งตอนระบบจับมือยังไม่พร้อมหรือโหลดไม่สำเร็จ
+      if (mpFailed) say('โหลดระบบจับมือไม่สำเร็จ');
+      else if (!landmarker && now - startedAt > 2500) say('กำลังเตรียมระบบจับมือ…');
+      else say('');
       if (skipBtn.hidden && (mpFailed || now - startedAt > 40000)) skipBtn.hidden = false;
     }
     function setClean(on) {
       clean = on;
       document.body.classList.toggle('cam-clean', on);
-      cleanHint.classList.toggle('show', on);
-      if (on) setTimeout(() => cleanHint.classList.remove('show'), 2200);
     }
 
     /* ----- นิ้วบนจอ: เช็ดฝ้าได้ด้วย ----- */

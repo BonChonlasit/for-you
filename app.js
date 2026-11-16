@@ -471,8 +471,7 @@
   function sceneIntro(el, next) {
     const lines = (C.intro && C.intro.length) ? C.intro : ['สุขสันต์วันเกิดนะ {name}'];
     const box = h('div', { class: 'intro-box' });
-    const hint = h('p', { class: 'tap-hint' }, 'แตะจอเพื่อไปต่อเร็วขึ้น');
-    el.append(box, hint);
+    el.append(box);
     let alive = true, skipFn = null;
     const wait = (ms) => new Promise((res) => {
       const t = setTimeout(done, ms);
@@ -518,7 +517,6 @@
       if (!alive) return;
       await sleep(900);
       if (!alive) return;
-      hint.remove();
       box.append(h('button', {
         class: 'candy berry big intro-go', type: 'button',
         onclick: (e) => { e.stopPropagation(); Sound.sfx.pop(); next(); }
@@ -627,7 +625,7 @@
 
     const statFound = h('b', {}, '0'), statMoves = h('b', {}, '0');
     const body = h('div', { class: 'mem-panel-body' },
-      h('p', { class: 'mem-hint' }, fill(M.hint || 'แตะการ์ดทีละ 2 ใบ หารูปที่เหมือนกันให้ครบ 6 คู่')),
+      M.hint ? h('p', { class: 'mem-hint' }, fill(M.hint)) : null,
       h('p', { class: 'mem-stat' }, 'เจอแล้ว ', statFound, ' จาก 6 คู่'),
       h('p', { class: 'mem-stat' }, 'เปิดไป ', statMoves, ' ครั้ง'));
     const panel = h('div', { class: 'mem-panel drip' }, h('h2', { class: 'mem-title' }, fill(M.title || 'จับคู่รูปของเรา')), body);
@@ -689,13 +687,12 @@
     const ps = (C.photos || []).slice(0, 12);
     const n = ps.length;
     const seen = new Set();
-    const prog = h('span', { class: 'gal-prog' });
     const nextBtn = h('button', { class: 'candy berry gal-next', type: 'button', onclick: () => { Sound.sfx.pop(); next(); } }, 'ไปต่อ');
     const table = h('div', { class: 'gal-table' });
     el.append(
-      h('header', { class: 'gal-head' }, h('h2', {}, fill(G.title || 'รูปของเรา')), h('p', {}, fill(G.hint || 'แตะรูปเพื่อดูเรื่องราวข้างหลัง'))),
+      h('header', { class: 'gal-head' }, h('h2', {}, fill(G.title || 'รูปของเรา')), G.hint ? h('p', {}, fill(G.hint)) : null),
       table,
-      h('div', { class: 'gal-foot' }, prog, nextBtn));
+      h('div', { class: 'gal-foot' }, nextBtn));
 
     // วางรูปกระจายแบบวางบนโต๊ะ
     const AW = 1080, AH = 520;
@@ -715,15 +712,11 @@
       pol.addEventListener('click', () => openView(i, pol));
       table.append(pol);
     });
-    paintProg();
-    function paintProg() { prog.textContent = `ดูแล้ว ${seen.size} จาก ${n} รูป`; }
-
     const inner = h('div', { class: 'vcard-inner' });
     const vcard = h('button', { class: 'vcard', type: 'button', 'aria-label': 'พลิกรูป' }, inner);
     const viewer = h('div', { class: 'viewer', hidden: true },
       h('div', { class: 'viewer-bg', onclick: closeView }),
       vcard,
-      h('p', { class: 'viewer-hint' }, 'แตะรูปเพื่อพลิกดูข้างหลัง'),
       h('button', { class: 'candy round viewer-x', type: 'button', 'aria-label': 'ปิด', onclick: closeView }, '✕'));
     el.append(viewer);
     vcard.addEventListener('click', () => { vcard.classList.toggle('flipped'); Sound.sfx.pop(); });
@@ -733,7 +726,6 @@
       if (!seen.has(i)) {
         seen.add(i);
         pol.insertAdjacentHTML('beforeend', heartSvg('seen-heart'));
-        paintProg();
         if (seen.size === n) nextBtn.classList.add('ready');
       }
       inner.replaceChildren(
@@ -769,7 +761,7 @@
       h('div', { class: 'env-front' }),
       h('div', { class: 'env-flap' }),
       seal);
-    const hint = h('p', { class: 'env-hint' }, fill(Lt.sealHint || 'แตะที่ตราหัวใจเพื่อเปิดจดหมาย'));
+    const hint = Lt.sealHint ? h('p', { class: 'env-hint' }, fill(Lt.sealHint)) : null;
     const box = h('div', { class: 'env-stage' }, env, hint);
     el.append(box);
     let alive = true, opened = false, skip = false;
@@ -778,7 +770,7 @@
       if (opened) return;
       opened = true;
       Sound.sfx.pop();
-      hint.classList.add('hide');
+      if (hint) hint.classList.add('hide');
       env.classList.add('open');
       await sleep(330);
       env.classList.add('flap-back');
@@ -793,9 +785,8 @@
 
     function openSheet() {
       const scroll = h('div', { class: 'letter-scroll' });
-      const skipHint = h('p', { class: 'letter-skip' }, 'แตะที่จดหมายเพื่ออ่านทั้งหมดทันที');
-      const sheet = h('div', { class: 'letter-sheet' }, h('p', { class: 'letter-greet' }, fill(Lt.greeting)), scroll, skipHint);
-      sheet.addEventListener('click', () => { skip = true; });
+      const sheet = h('div', { class: 'letter-sheet' }, h('p', { class: 'letter-greet' }, fill(Lt.greeting)), scroll);
+      sheet.addEventListener('click', () => { skip = true; }); // แตะจดหมาย = ข้ามไปอ่านทั้งหมด
       el.append(sheet);
       (async () => {
         await sleep(600);
@@ -818,7 +809,6 @@
           if (!skip) await sleep(450);
         }
         if (!alive) return;
-        skipHint.remove();
         scroll.append(
           h('div', { class: 'letter-sign' }, h('p', {}, fill(Lt.signoff || 'รักนะ')), h('p', { class: 'sig' }, fill(Lt.signature || '{from}'))),
           h('button', {
@@ -1051,7 +1041,7 @@
     const xs = candleXs(n);
     const lit = xs.map(() => true);
     const order = shuffle(xs.map((_, i) => i));
-    let litCount = n, finished = false, alive = true, mic = null, energy = 0, songT = 0;
+    let litCount = n, finished = false, alive = true, mic = null, energy = 0, songT = 0, finalT = 0;
 
     const slots = xs.map((x, i) => {
       const s = h('button', {
@@ -1062,10 +1052,10 @@
       wrap.append(s);
       return s;
     });
-    const micBtn = h('button', { class: 'candy berry big mic-btn', type: 'button', html: `${MIC_SVG}<span>${esc(fill(K.micButton || 'เปิดไมค์แล้วเป่าเลย'))}</span>` });
+    const micBtn = h('button', { class: 'candy berry big mic-btn', type: 'button', html: `${MIC_SVG}<span>${esc(fill(K.micButton || 'เปิดไมค์'))}</span>` });
     const bar = h('i');
     const meter = h('div', { class: 'meter', hidden: true }, bar);
-    const status = h('p', { class: 'cake-status', 'aria-live': 'polite' }, fill(K.tapHint || 'หรือแตะที่เปลวเทียนก็ได้'));
+    const status = h('p', { class: 'cake-status', 'aria-live': 'polite' }, fill(K.tapHint || ''));
     const side = h('div', { class: 'cake-side' }, h('h2', { class: 'cake-title' }, fill(K.title)), micBtn, meter, status);
     el.append(wrap, side);
 
@@ -1110,7 +1100,7 @@
         mic = m;
         micBtn.hidden = true;
         meter.hidden = false;
-        status.textContent = fill(K.listening || 'เป่าแรงๆ เลย');
+        status.textContent = fill(K.listening || '');
       } catch (err) {
         console.warn('เปิดไมค์ไม่ได้:', err);
         micBtn.disabled = false;
@@ -1136,22 +1126,36 @@
       const vw = window.innerWidth, vh = window.innerHeight;
       FX.burst(0, vh, 120, { angle: -Math.PI / 3, spread: 0.8, speed: 1500 });
       FX.burst(vw, vh, 120, { angle: -2 * Math.PI / 3, spread: 0.8, speed: 1500 });
-      FX.rain(9, 110);
-      FX.setDrizzle(12);
+      FX.rain(6, 110);
+      FX.setDrizzle(10);
       const songLen = Sound.birthdaySong();
       songT = setTimeout(() => Music.duck(false), songLen * 1000 + 300);
       side.replaceChildren(
         h('h1', { class: 'hb' }, headline(fill(K.headline || 'HAPPY BIRTHDAY'))),
         h('p', { class: 'hb-name' }, fill(C.name)),
-        h('p', { class: 'hb-wish' }, fill(K.wish)),
-        h('button', { class: 'candy hb-replay', type: 'button', onclick: () => { Sound.sfx.pop(); goId('intro'); } }, fill(K.replay || 'ดูอีกรอบ')));
+        h('p', { class: 'hb-wish' }, fill(K.wish)));
       wrap.addEventListener('click', () => { FX.burstAt(wrap, 50, { hearts: 0.5, speed: 700 }); Sound.sfx.sparkle(); });
+      if (K.finalImage) finalT = setTimeout(revealFinal, (Number(K.finalDelay) || 7) * 1000);
+    }
+
+    // ภาพปิดท้าย: เค้กค่อยๆ หลบไป แล้วภาพคอลลาจของเราสองคนลอยขึ้นมาแทน
+    function revealFinal() {
+      if (!alive) return;
+      const img = h('img', { class: 'final-img', src: K.finalImage, alt: '', draggable: 'false' });
+      const fin = h('div', { class: 'final' }, img);
+      img.addEventListener('error', () => { fin.remove(); el.classList.remove('finale-reveal'); }, { once: true });
+      fin.addEventListener('click', () => { FX.burstAt(img, 60, { hearts: 0.75, speed: 750 }); Sound.sfx.sparkle(); });
+      el.append(fin);
+      el.classList.add('finale-reveal');
+      Sound.sfx.chime();
+      FX.setDrizzle(5); // กระดาษสีโปรยเบาๆ ไม่บังหน้าในรูป
     }
 
     return () => {
       alive = false;
       if (mic) { mic.stop(); mic = null; }
       clearTimeout(songT);
+      clearTimeout(finalT);
       FX.setDrizzle(0);
       document.body.classList.remove('lights-off');
       Music.duck(false);
@@ -1284,6 +1288,7 @@
 
     // โหลดรูปล่วงหน้า จะได้ไม่กระพริบตอนพลิกการ์ด
     (C.photos || []).forEach((p) => { if (p && p.src) { const im = new Image(); im.src = p.src; } });
+    if (C.cake && C.cake.finalImage) { const im = new Image(); im.src = C.cake.finalImage; }
 
     if (DEV) {
       const nav = $('#dev-nav');
