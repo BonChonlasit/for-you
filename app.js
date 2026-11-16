@@ -171,9 +171,11 @@
   /* ---------- เพลงพื้นหลัง (ไฟล์ใน config.music.src) ---------- */
   const Music = (() => {
     const btn = $('#music-btn');
-    const src = C.music && C.music.src;
     let audio = null, wanted = true, ducked = false;
-    if (src) {
+    // เรียกหลังโหลดค่าจากหน้า admin แล้ว (เพลงอาจมาจากเครื่องนี้)
+    function init() {
+      const src = C.music && C.music.src;
+      if (!src || audio) return;
       audio = new Audio();
       audio.loop = true;
       audio.preload = 'auto';
@@ -205,7 +207,7 @@
       if (!audio) return;
       if (document.hidden) audio.pause(); else play();
     });
-    return { start: play, duck };
+    return { init, start: play, duck };
   })();
 
   /* =====================================================================
@@ -373,10 +375,11 @@
       box.append(l);
       return l;
     });
-    // ด่าน 1–6 = เค้ก 1–6 ชั้น, ด่านเค้กจริงซ่อนไว้
-    function set(idx) {
-      document.body.classList.toggle('hud-on', idx >= 1 && idx <= 6);
-      const n = clamp(idx, 0, layers.length);
+    // ผ่านแต่ละด่าน เค้กสูงขึ้นหนึ่งชั้น (ด่านกล้อง/รหัส/เค้กจริง ซ่อนไว้)
+    const LAYERS_AT = { intro: 1, quiz: 2, memory: 3, gallery: 4, letter: 5, ask: 6 };
+    function set(id) {
+      const n = LAYERS_AT[id] || 0;
+      document.body.classList.toggle('hud-on', n > 0);
       layers.forEach((l, i) => l.classList.toggle('on', i < n));
     }
     return { set };
@@ -1141,7 +1144,7 @@
         h('h1', { class: 'hb' }, headline(fill(K.headline || 'HAPPY BIRTHDAY'))),
         h('p', { class: 'hb-name' }, fill(C.name)),
         h('p', { class: 'hb-wish' }, fill(K.wish)),
-        h('button', { class: 'candy hb-replay', type: 'button', onclick: () => { Sound.sfx.pop(); go(1); } }, fill(K.replay || 'ดูอีกรอบ')));
+        h('button', { class: 'candy hb-replay', type: 'button', onclick: () => { Sound.sfx.pop(); goId('intro'); } }, fill(K.replay || 'ดูอีกรอบ')));
       wrap.addEventListener('click', () => { FX.burstAt(wrap, 50, { hearts: 0.5, speed: 700 }); Sound.sfx.sparkle(); });
     }
 
@@ -1158,7 +1161,9 @@
   /* =====================================================================
      ตัวสลับด่าน
      ===================================================================== */
-  const SCENES = [
+  const camKit = { h, C, fill, Sound, Music, FX, HEART, addDrip };
+  const ALL_SCENES = [
+    { id: 'camera', build: (el, next) => (window.CameraScene ? window.CameraScene(el, next, camKit) : (setTimeout(next, 0), null)) },
     { id: 'lock', build: sceneLock },
     { id: 'intro', build: sceneIntro },
     { id: 'quiz', build: sceneQuiz },
@@ -1168,6 +1173,7 @@
     { id: 'ask', build: sceneAsk },
     { id: 'cake', build: sceneCake }
   ];
+  let SCENES = ALL_SCENES;
   const root = $('#scenes');
   let cur = -1, curEl = null, cleanup = null, devLabel = null;
 
@@ -1188,14 +1194,67 @@
     const el = h('section', { class: `scene scene-${def.id}`, 'data-scene': def.id });
     curEl = el;
     root.append(el);
-    HUD.set(i);
+    HUD.set(def.id);
     if (devLabel) devLabel.textContent = def.id;
     cleanup = def.build(el, () => { if (curEl === el) go(i + 1); }) || null;
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('entered')));
   }
+  function goId(id) {
+    const k = SCENES.findIndex((s) => s.id === id);
+    go(k >= 0 ? k : 0);
+  }
+
+  /* ---------- ค่าที่ตั้งจากหน้า admin (เก็บไว้ในเครื่องนี้เท่านั้น) ---------- */
+  const STORE_KEY = 'for-you:config:v1';
+  function deepMerge(base, over) {
+    if (!over || typeof over !== 'object' || Array.isArray(over)) return over;
+    const out = (base && typeof base === 'object' && !Array.isArray(base)) ? base : {};
+    for (const k of Object.keys(over)) out[k] = deepMerge(out[k], over[k]);
+    return out;
+  }
+  function openMediaDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) { reject(new Error('ไม่มี IndexedDB')); return; }
+      const rq = indexedDB.open('for-you', 1);
+      rq.onupgradeneeded = () => { if (!rq.result.objectStoreNames.contains('media')) rq.result.createObjectStore('media'); };
+      rq.onsuccess = () => resolve(rq.result);
+      rq.onerror = () => reject(rq.error);
+    });
+  }
+  // แปลง "idb:<id>" (รูป/เพลงที่อัปจากหน้า admin) เป็นลิงก์ที่เบราว์เซอร์เปิดได้
+  async function resolveMedia(cfg) {
+    const ids = new Set();
+    const walk = (v) => {
+      if (typeof v === 'string') { if (v.startsWith('idb:')) ids.add(v.slice(4)); }
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+    };
+    walk(cfg);
+    if (!ids.size) return;
+    const db = await openMediaDb();
+    const urls = {};
+    await Promise.all([...ids].map((id) => new Promise((done) => {
+      const rq = db.transaction('media', 'readonly').objectStore('media').get(id);
+      rq.onsuccess = () => { if (rq.result instanceof Blob) urls[id] = URL.createObjectURL(rq.result); done(); };
+      rq.onerror = () => done();
+    })));
+    const swap = (v) => {
+      if (typeof v === 'string') return v.startsWith('idb:') ? (urls[v.slice(4)] || '') : v;
+      if (Array.isArray(v)) return v.map(swap);
+      if (v && typeof v === 'object') { for (const k of Object.keys(v)) v[k] = swap(v[k]); }
+      return v;
+    };
+    swap(cfg);
+  }
+  async function loadOverrides() {
+    let raw = null;
+    try { raw = localStorage.getItem(STORE_KEY); } catch (e) { return; }
+    if (!raw) return;
+    try { deepMerge(C, JSON.parse(raw)); } catch (e) { console.warn('ข้อมูลจากหน้า admin อ่านไม่ได้ ใช้ค่าเริ่มต้นแทน', e); return; }
+    try { await resolveMedia(C); } catch (e) { console.warn('โหลดรูป/เพลงที่เก็บในเครื่องไม่ได้', e); }
+  }
 
   /* ---------- เริ่มต้น ---------- */
-  document.title = fill(C.siteTitle || document.title);
   paintTextures();
   fit();
   window.addEventListener('resize', fit);
@@ -1203,31 +1262,49 @@
   document.addEventListener('gesturestart', (e) => e.preventDefault()); // กันซูมด้วยสองนิ้วบน iPad
   document.addEventListener('touchstart', () => {}, { passive: true }); // ให้ปุ่มยุบตอนแตะบน iOS
 
-  // ปลดล็อกเสียงตั้งแต่การแตะครั้งแรก (iPad บังคับ)
-  const unlockAll = () => { Sound.unlock(); if (cur > 0) Music.start(); };
+  // ปลดล็อกเสียงตั้งแต่การแตะครั้งแรก (iPad บังคับ) — เพลงเริ่มตอนใส่รหัสถูก หรือตอนเปิดกล้อง
+  const unlockAll = () => { Sound.unlock(); if (SCENES[cur] && SCENES[cur].id !== 'lock') Music.start(); };
   ['touchend', 'click', 'keydown'].forEach((ev) => window.addEventListener(ev, unlockAll, { capture: true, passive: true }));
 
-  // โหลดรูปล่วงหน้า จะได้ไม่กระพริบตอนพลิกการ์ด
-  (C.photos || []).forEach((p) => { if (p && p.src) { const im = new Image(); im.src = p.src; } });
+  // แตะมุมซ้ายบน 5 ครั้งติดกัน = เปิดหน้า admin (ใช้ได้แม้เปิดจากไอคอนบนหน้าจอโฮม)
+  let cornerTaps = [];
+  window.addEventListener('pointerdown', (e) => {
+    if (e.clientX > 90 || e.clientY > 90) { cornerTaps = []; return; }
+    const now = performance.now();
+    cornerTaps = cornerTaps.filter((t) => now - t < 2500);
+    cornerTaps.push(now);
+    if (cornerTaps.length >= 5) { cornerTaps = []; location.href = 'admin.html'; }
+  }, { capture: true, passive: true });
 
-  if (DEV) {
-    const nav = $('#dev-nav');
-    devLabel = h('span');
-    nav.append(
-      h('button', { type: 'button', onclick: () => go(cur - 1) }, '◀'),
-      devLabel,
-      h('button', { type: 'button', onclick: () => go(cur + 1) }, '▶'));
-    nav.hidden = false;
-  }
+  async function boot() {
+    await loadOverrides();
+    document.title = fill(C.siteTitle || document.title);
+    Music.init();
+    SCENES = ALL_SCENES.filter((s) => s.id !== 'camera' || (C.camera && C.camera.enabled !== false));
 
-  const want = params.get('scene');
-  let start = 0;
-  if (want) {
-    const k = SCENES.findIndex((s) => s.id === want);
-    start = k >= 0 ? k : clamp(parseInt(want, 10) || 0, 0, SCENES.length - 1);
+    // โหลดรูปล่วงหน้า จะได้ไม่กระพริบตอนพลิกการ์ด
+    (C.photos || []).forEach((p) => { if (p && p.src) { const im = new Image(); im.src = p.src; } });
+
+    if (DEV) {
+      const nav = $('#dev-nav');
+      devLabel = h('span');
+      nav.append(
+        h('button', { type: 'button', onclick: () => go(cur - 1) }, '◀'),
+        devLabel,
+        h('button', { type: 'button', onclick: () => go(cur + 1) }, '▶'));
+      nav.hidden = false;
+    }
+
+    const want = params.get('scene');
+    let start = 0;
+    if (want) {
+      const k = SCENES.findIndex((s) => s.id === want);
+      start = k >= 0 ? k : clamp(parseInt(want, 10) || 0, 0, SCENES.length - 1);
+    }
+    go(start);
   }
-  go(start);
+  boot();
 
   // ไว้ทดสอบจากคอนโซล
-  window.__surprise = { go, FX, Sound, micDebug };
+  window.__surprise = { go, goId, FX, Sound, micDebug, config: C };
 })();

@@ -225,6 +225,184 @@ body.hud-on #hud-cake { opacity: 1; }
 .ph-file { font-size: 14px; color: rgba(90, 46, 58, .6); }
 
 /* =====================================================================
+   ด่านแรกสุด: กระจกฝ้า + กล้องจับมือ
+   ===================================================================== */
+.cam-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #2E1E26;
+  transition: opacity .45s ease;
+}
+.cam-layer.out { opacity: 0; }
+.cam-video, .cam-fog {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* ภาพกระจก ให้ขยับมือแล้วตรงกับที่เห็น */
+}
+/* ฝ้าใหญ่กว่าจอนิดนึง ขอบจะได้ไม่จางตอนเบลอ */
+.cam-fog { inset: -14px; width: calc(100% + 28px); height: calc(100% + 28px); filter: blur(7px); }
+.cam-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+body.cam-on, body.cam-on * { touch-action: none; }
+body.cam-on #app { background: #2E1E26; }
+
+.cam-start {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 780px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 82px 64px 44px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.cam-start.gone { opacity: 0; transform: translate(-50%, -46%) scale(.96); pointer-events: none; }
+.cam-title { font-size: 52px; font-weight: 700; line-height: 1.3; margin: 0; color: var(--berry); }
+.cam-sub { font-size: 26px; line-height: 1.6; margin: 0 0 12px; max-width: 620px; }
+.cam-note { font-size: 20px; line-height: 1.5; color: var(--cocoa-soft); margin: 0; min-height: 1.5em; }
+.cam-skip-inline, .cam-skip {
+  border: 0;
+  background: none;
+  padding: 8px 12px;
+  font-size: 19px;
+  color: var(--cocoa-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cam-ui { position: absolute; inset: 0; pointer-events: none; transition: opacity .3s ease; }
+.cam-ui > * { pointer-events: auto; }
+.cam-chip {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  margin: 0;
+  padding: 12px 30px;
+  border-radius: 999px;
+  background: rgba(255, 251, 253, .93);
+  box-shadow: 0 6px 0 rgba(219, 63, 116, .28);
+  font-size: 26px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.cam-chip.bump { animation: chipIn .35s ease both; }
+.cam-guide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 330px;
+  height: 330px;
+  margin: -175px 0 0 -165px;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+.cam-guide svg { width: 100%; height: 100%; overflow: visible; }
+.hg-fill { fill: rgba(255, 143, 184, .6); }
+.hg-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, .92);
+  stroke-width: .45;
+  stroke-dasharray: 1.1 .9;
+  stroke-linecap: round;
+  transform-origin: 12px 12px;
+  animation: guidePulse 2.4s ease-in-out infinite;
+}
+.cam-guide.seen .hg-line { stroke: #FFD6E7; stroke-dasharray: none; stroke-width: .6; }
+.cam-guide.done { opacity: 0; }
+.cam-legend {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  display: flex;
+  gap: 10px;
+  transform: translateX(-50%);
+}
+.cam-leg {
+  min-width: 112px;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px 9px;
+  border-radius: 22px;
+  background: rgba(255, 251, 253, .86);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.cam-leg b { font-size: 30px; font-weight: 400; line-height: 1.15; }
+.cam-leg small { font-size: 15px; font-weight: 500; color: var(--cocoa-soft); }
+.cam-leg.on { background: #FFFFFF; box-shadow: 0 6px 0 var(--glaze); transform: translateY(-8px) scale(1.06); }
+.cam-tools { position: absolute; right: 26px; bottom: 26px; display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+.cam-tool { font-size: 18px; padding: 10px 16px; white-space: nowrap; }
+.cam-tool[aria-pressed="true"] { --c: var(--lilac); --cs: var(--lilac-deep); }
+.cam-skip { position: absolute; left: 30px; bottom: 36px; color: #FFFFFF; text-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
+.cam-success {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  width: 820px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  padding: 30px 44px;
+  border-radius: 40px;
+  background: var(--frost);
+  box-shadow: 0 12px 0 var(--shadow-pink);
+  animation: rise .5s cubic-bezier(.3, 1.4, .5, 1) both;
+  transition: opacity .3s ease;
+}
+.cam-polaroid {
+  position: relative;
+  flex: none;
+  width: 300px;
+  padding: 12px 12px 0;
+  border-radius: 6px;
+  background: #FFFFFF;
+  box-shadow: 0 9px 0 rgba(219, 63, 116, .16);
+  transform: rotate(-4deg);
+}
+.cam-polaroid img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 3px; }
+.cam-pol-cap { display: block; padding: 8px 0 12px; font-family: var(--hand); font-size: 26px; text-align: center; }
+.cam-success-body { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+.cam-success-body h2 { font-size: 40px; font-weight: 700; line-height: 1.35; margin: 0; color: var(--berry); }
+.cam-success-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cam-save { font-size: 22px; padding: 14px 26px; text-decoration: none; }
+.cam-clean-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  margin: 0;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: rgba(46, 30, 38, .55);
+  color: #FFFFFF;
+  font-size: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity .4s ease;
+}
+.cam-clean-hint.show { opacity: 1; }
+body.cam-clean .cam-ui,
+body.cam-clean .cam-success,
+body.cam-clean #music-btn { opacity: 0; pointer-events: none; }
+body.cam-clean .cam-ui > * { pointer-events: none; }
+@keyframes chipIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes guidePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+/* =====================================================================
    ด่าน 0: ล็อก
    ===================================================================== */
 .scene-lock {
