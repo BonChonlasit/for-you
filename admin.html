@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFE6EE">
+  <meta name="robots" content="noindex, nofollow">
+  <title>หลังบ้าน · มีของขวัญมาส่ง</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21C12 21 3 15.5 3 9.2 3 6.3 5.2 4 8 4c1.8 0 3.2 1 4 2.4C12.8 5 14.2 4 16 4c2.8 0 5 2.3 5 5.2C21 15.5 12 21 12 21z' fill='%23DB3F74'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sriracha&display=swap">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <a class="skip" href="#main">ข้ามไปที่เนื้อหา</a>
+
+  <header class="topbar">
+    <div class="topbar-in">
+      <a class="btn back" href="index.html" data-nav><span aria-hidden="true">←</span> กลับไปหน้าเว็บ</a>
+      <span id="status" class="chip" role="status" aria-live="polite" data-kind="idle">กำลังโหลด…</span>
+      <span class="spacer"></span>
+      <div class="actions">
+        <button id="btn-backup" class="btn" type="button"><span aria-hidden="true">💾</span> สำรองข้อมูล</button>
+        <button id="btn-import" class="btn" type="button"><span aria-hidden="true">📥</span> นำเข้า</button>
+        <button id="btn-reset" class="btn danger" type="button"><span aria-hidden="true">🗑️</span> ล้างทั้งหมด</button>
+      </div>
+      <div id="tokenbar" class="tokenbar" hidden>
+        <span>ใส่ชื่อ:</span>
+        <button class="tok" type="button" data-token="{name}">{name} <small>ชื่อแฟน</small></button>
+        <button class="tok" type="button" data-token="{from}">{from} <small>ชื่อเรา</small></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <div class="page-head">
+      <h1 class="page-title">หลังบ้าน</h1>
+      <p class="page-sub">แก้ข้อความ รูป คำถาม และเพลงของเว็บได้ที่นี่ ไม่ต้องแก้โค้ด แก้ปุ๊บบันทึกปั๊บ</p>
+    </div>
+
+    <div id="alerts" class="alerts"></div>
+
+    <section class="note" aria-labelledby="note-title">
+      <div class="note-ico" aria-hidden="true">📱</div>
+      <div>
+        <h2 id="note-title">ข้อมูลอยู่ในเครื่องนี้เท่านั้น</h2>
+        <ul>
+          <li>ทุกอย่างที่แก้ในหน้านี้บันทึกไว้ในเครื่องนี้ (เฉพาะเบราว์เซอร์นี้) ไม่ได้อัปขึ้นเว็บ อย่าลืมกดสำรองข้อมูลเก็บไว้ด้วย จะได้ไม่หาย</li>
+          <li>จะย้ายไปเปิดบน iPad: กด <b>สำรองข้อมูล</b> แล้วส่งไฟล์ไปที่ iPad จากนั้นเปิดหน้านี้บน iPad แล้วกด <b>นำเข้า</b></li>
+          <li>ถ้าเพิ่มเว็บไว้ที่หน้าจอโฮมของ iPad ให้เปิดหน้านี้จากในแอปนั้น (แตะมุมซ้ายบนของเว็บเร็วๆ 5 ครั้ง) เพราะแอปที่หน้าจอโฮมเก็บข้อมูลแยกจาก Safari</li>
+        </ul>
+      </div>
+    </section>
+
+    <nav class="toc" aria-label="ไปที่หัวข้อ">
+      <a href="#sec-general">ทั่วไป</a>
+      <a href="#sec-camera">ด่านกล้อง</a>
+      <a href="#sec-lock">รหัส</a>
+      <a href="#sec-intro">เปิดเรื่อง</a>
+      <a href="#sec-photos">รูปภาพ</a>
+      <a href="#sec-quiz">ควิซ</a>
+      <a href="#sec-letter">จดหมาย</a>
+      <a href="#sec-ask">คำถามสำคัญ</a>
+      <a href="#sec-cake">เค้ก</a>
+      <a href="#sec-music">เพลง</a>
+    </nav>
+
+    <div id="sections"></div>
+
+    <p class="foot"><a href="#main">↑ กลับขึ้นด้านบน</a></p>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="busy" class="busy" hidden>
+    <div class="busy-card" role="status" aria-live="assertive">
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="busy-text">กำลังทำงาน…</span>
+    </div>
+  </div>
+
+  <noscript>
+    <p style="max-width:600px;margin:20px auto;padding:16px;border-radius:16px;background:#fff;text-align:center">หน้านี้ต้องเปิด JavaScript ถึงจะใช้งานได้</p>
+  </noscript>
+
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

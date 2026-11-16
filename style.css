@@ -171,6 +171,68 @@ body.hud-on #hud-cake { opacity: 1; }
   z-index: 10;
   color: var(--berry);
 }
+
+/* ---------- ปุ่มอัดวิดีโอ ---------- */
+#rec-btn {
+  position: absolute;
+  right: 112px;
+  top: 30px;
+  z-index: 10;
+  gap: 10px;
+  transition: translate .08s ease, box-shadow .08s ease, opacity .3s ease;
+}
+#stage:has(#music-btn[hidden]) #rec-btn { right: 34px; }
+.rec-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #E5484D;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .12);
+}
+.rec-time { display: none; font-size: 21px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#rec-btn.on { width: auto; padding: 0 20px 0 18px; display: flex; }
+#rec-btn.on .rec-dot { width: 18px; height: 18px; animation: recPulse 1.2s ease-in-out infinite; }
+#rec-btn.on .rec-time { display: inline; }
+@keyframes recPulse { 50% { opacity: .35; } }
+.rec-note {
+  position: absolute;
+  right: 34px;
+  top: 106px;
+  z-index: 60;
+  max-width: 440px;
+  padding: 14px 22px;
+  border-radius: 22px;
+  background: var(--frost);
+  box-shadow: 0 7px 0 var(--shadow-pink);
+  font-size: 20px;
+  line-height: 1.5;
+  animation: rise .3s ease both;
+}
+.rec-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 230, 238, .86);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.rec-card {
+  width: 780px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 30px 36px 34px;
+  border-radius: 40px;
+  background: var(--frost);
+  box-shadow: 0 12px 0 var(--shadow-pink);
+  animation: popIn .4s cubic-bezier(.3, 1.5, .5, 1) both;
+}
+.rec-card h2 { font-size: 34px; font-weight: 700; margin: 0; color: var(--berry); }
+.rec-video { display: block; width: 100%; max-height: 470px; border-radius: 20px; background: #2E1E26; }
+.rec-actions { display: flex; gap: 18px; }
 #music-btn svg { width: 30px; height: 30px; }
 #music-btn.off { color: #C9A9B4; }
 #music-btn.off::after {
@@ -303,7 +365,12 @@ body.cam-on #app { background: #2E1E26; }
   pointer-events: none;
   transition: opacity .3s ease;
 }
-.cam-guide svg { width: 100%; height: 100%; overflow: visible; }
+.cam-guide svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 calc(var(--p, 0) * 22px) rgba(255, 143, 184, .95));
+}
 .hg-fill { fill: rgba(255, 143, 184, .6); }
 .hg-line {
   fill: none;
@@ -355,6 +422,7 @@ body.cam-on #app { background: #2E1E26; }
 .cam-save { font-size: 22px; padding: 14px 26px; text-decoration: none; }
 body.cam-clean .cam-ui,
 body.cam-clean .cam-success,
+body.cam-clean #rec-btn,
 body.cam-clean #music-btn { opacity: 0; pointer-events: none; }
 body.cam-clean .cam-ui > * { pointer-events: none; }
 @keyframes chipIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
@@ -869,7 +937,7 @@ body.cam-clean .cam-ui > * { pointer-events: none; }
 .vback-date { font-size: 24px; font-weight: 600; color: var(--berry); margin: 0; }
 .vback-cap { font-family: var(--hand); font-size: 36px; line-height: 1.6; margin: 0; }
 .vback svg { width: 54px; height: 54px; fill: var(--glaze); }
-.viewer-x { position: absolute; top: 30px; right: 36px; }
+.viewer-x { position: absolute; top: 92px; left: calc(50% + 250px); }
 
 /* =====================================================================
    ด่าน 5: จดหมาย

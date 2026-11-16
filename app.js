@@ -142,8 +142,14 @@
       chime: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.1, 0.7, { vol: 0.15 })),
       whoosh: () => noise(0.28, 0.35, 2400, 500),
       puff: () => noise(0.4, 0.5, 900, 250),
-      stamp: () => { tone(110, 0, 0.2, { type: 'triangle', vol: 0.35, to: 60 }); noise(0.12, 0.25, 600, 200); }
+      stamp: () => { tone(110, 0, 0.2, { type: 'triangle', vol: 0.35, to: 60 }); noise(0.12, 0.25, 600, 200); },
+      heartbeat: (v = 1) => { tone(120, 0, 0.14, { type: 'triangle', vol: 0.3 * v, to: 70 }); tone(105, 0.2, 0.16, { type: 'triangle', vol: 0.24 * v, to: 62 }); }
     };
+    // ส่งเสียงทั้งหมดของเว็บเข้าคลิปที่กำลังอัด
+    function recordTap(dest, on) {
+      if (!ensure() || !out) return;
+      try { if (on) out.connect(dest); else out.disconnect(dest); } catch (e) { /* ignore */ }
+    }
     function bell(f, at, len, vol) {
       tone(f, at, len + 1.1, { vol, attack: 0.004 });
       tone(f * 2, at, len + 0.5, { vol: vol * 0.3, attack: 0.004 });
@@ -165,7 +171,7 @@
       ['C4', 'G3', 'G3', 'C4', 'C4', 'F3', 'G3', 'C4'].forEach((note, i) => bell(N[note], start + (1 + i * 3) * beat, 2.6 * beat, 0.08));
       return t + 1.2;
     }
-    return { ensure, unlock, sfx, birthdaySong, setSession };
+    return { ensure, unlock, sfx, birthdaySong, setSession, recordTap };
   })();
 
   /* ---------- เพลงพื้นหลัง (ไฟล์ใน config.music.src) ---------- */
@@ -207,7 +213,149 @@
       if (!audio) return;
       if (document.hidden) audio.pause(); else play();
     });
-    return { init, start: play, duck };
+    // ต่อเพลงพื้นหลังเข้าคลิป (ต้องผ่าน Web Audio ครั้งแรกที่อัด แล้วจะเล่นผ่านทางนั้นตลอด)
+    let elSrc = null;
+    function recordTap(ctx, dest, on) {
+      if (!audio || !ctx) return;
+      try {
+        if (!elSrc) { elSrc = ctx.createMediaElementSource(audio); elSrc.connect(ctx.destination); }
+        if (on) elSrc.connect(dest); else elSrc.disconnect(dest);
+      } catch (e) { console.warn('ต่อเพลงเข้าคลิปไม่ได้', e); }
+    }
+    return { init, start: play, duck, recordTap };
+  })();
+
+  /* =====================================================================
+     อัดวิดีโอ: อัดภาพหน้าจอจริง + เสียงทั้งหมดของเว็บ แล้วบันทึกเป็นไฟล์
+     ===================================================================== */
+  const Recorder = (() => {
+    const btn = $('#rec-btn');
+    const clock = $('#rec-time');
+    const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && window.MediaRecorder);
+    let rec = null, display = null, dest = null, chunks = [], t0 = 0, timer = 0;
+
+    function pickType() {
+      const types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+      return types.find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+    }
+    function tick() {
+      const s = Math.floor((performance.now() - t0) / 1000);
+      clock.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    }
+    function note(text) {
+      const n = h('div', { class: 'rec-note', role: 'status' }, text);
+      $('#stage').append(n);
+      setTimeout(() => n.remove(), 4200);
+    }
+    function untap() {
+      if (!dest) return;
+      Sound.recordTap(dest, false);
+      Music.recordTap(Sound.ensure(), dest, false);
+      dest = null;
+    }
+    async function start() {
+      if (!supported) { note('เครื่องนี้อัดจากเว็บไม่ได้ ใช้ปุ่มอัดหน้าจอของเครื่องแทนนะ'); return; }
+      try {
+        // ต้องเรียกทันทีตอนแตะปุ่ม — Chrome จะเสนอให้อัด "แท็บนี้"
+        display = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: { ideal: 30 } },
+          audio: false,
+          preferCurrentTab: true,
+          selfBrowserSurface: 'include',
+          surfaceSwitching: 'exclude',
+          monitorTypeSurfaces: 'exclude'
+        });
+      } catch (err) {
+        console.warn('เริ่มอัดไม่ได้', err);
+        if (err && err.name !== 'NotAllowedError' && err.name !== 'AbortError') note('เริ่มอัดไม่ได้ ลองอีกครั้งนะ');
+        return;
+      }
+      const tracks = display.getVideoTracks();
+      const ctx = Sound.ensure();
+      if (ctx && ctx.createMediaStreamDestination) {
+        dest = ctx.createMediaStreamDestination();
+        Sound.recordTap(dest, true);
+        Music.recordTap(ctx, dest, true);
+        tracks.push(...dest.stream.getAudioTracks());
+      }
+      const type = pickType();
+      try {
+        rec = new MediaRecorder(new MediaStream(tracks), type ? { mimeType: type, videoBitsPerSecond: 2500000, audioBitsPerSecond: 128000 } : undefined);
+      } catch (err) {
+        console.warn('MediaRecorder ใช้ไม่ได้', err);
+        display.getTracks().forEach((t) => t.stop());
+        display = null;
+        untap();
+        note('เครื่องนี้อัดจากเว็บไม่ได้ ใช้ปุ่มอัดหน้าจอของเครื่องแทนนะ');
+        return;
+      }
+      chunks = [];
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = finish;
+      display.getVideoTracks()[0].addEventListener('ended', stop); // กดหยุดแชร์จากแถบของเบราว์เซอร์
+      rec.start(1000);
+      t0 = performance.now();
+      tick();
+      timer = setInterval(tick, 500);
+      btn.classList.add('on');
+      btn.setAttribute('aria-label', 'หยุดอัด');
+    }
+    function stop() {
+      if (rec && rec.state !== 'inactive') rec.stop();
+    }
+    function finish() {
+      clearInterval(timer);
+      btn.classList.remove('on');
+      btn.setAttribute('aria-label', 'อัดวิดีโอ');
+      if (display) display.getTracks().forEach((t) => t.stop());
+      untap();
+      const type = (rec && rec.mimeType) || 'video/webm';
+      const blob = new Blob(chunks, { type: type.split(';')[0] });
+      rec = null;
+      display = null;
+      chunks = [];
+      if (blob.size) showSheet(blob);
+    }
+    function stamp() {
+      const d = new Date(), p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+    }
+    function showSheet(blob) {
+      const url = URL.createObjectURL(blob);
+      const name = `for-you-${stamp()}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+      let saved = false;
+      const video = h('video', { class: 'rec-video', src: url, controls: true, playsinline: true });
+      const saveBtn = h('button', { class: 'candy berry big', type: 'button' }, 'บันทึกวิดีโอ');
+      const closeBtn = h('button', { class: 'candy', type: 'button' }, 'ปิด');
+      const sheet = h('div', { class: 'rec-sheet' },
+        h('div', { class: 'rec-card' }, h('h2', {}, 'คลิปของเรา 🎬'), video, h('div', { class: 'rec-actions' }, saveBtn, closeBtn)));
+      saveBtn.addEventListener('click', async () => {
+        const file = new File([blob], name, { type: blob.type });
+        try {
+          // iPad/มือถือ: เปิดแผ่นแชร์ เลือก "บันทึกวิดีโอ" ลงแอปรูปภาพได้ / คอม: ดาวน์โหลดไฟล์
+          if ((navigator.maxTouchPoints || 0) > 0 && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] });
+          } else {
+            const a = h('a', { href: url, download: name });
+            document.body.append(a);
+            a.click();
+            a.remove();
+          }
+          saved = true;
+          saveBtn.textContent = 'บันทึกแล้ว ✓';
+        } catch (err) {
+          if (err && err.name !== 'AbortError') console.warn('บันทึกวิดีโอไม่ได้', err);
+        }
+      });
+      closeBtn.addEventListener('click', () => {
+        if (!saved && !window.confirm('ยังไม่ได้บันทึกคลิป ปิดเลยไหม?')) return;
+        sheet.remove();
+        URL.revokeObjectURL(url);
+      });
+      $('#stage').append(sheet);
+    }
+    btn.addEventListener('click', () => { if (rec) stop(); else start(); });
+    return { get recording() { return !!rec; } };
   })();
 
   /* =====================================================================

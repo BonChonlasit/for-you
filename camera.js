@@ -181,7 +181,7 @@
     let vw = 1280, vh = 720, sw = 1, sh = 1, U = 1;
     let cover = { k: 1, dw: 1, dh: 1, ox: 0, oy: 0 };
     let tracks = [], nextId = 1, parts = [], drops = [], trails = [];
-    let holdT = 0, passed = false, heartNow = null, bigHeart = null, snapshotUrl = '';
+    let holdT = 0, lostT = 0, beatT = 0, passed = false, heartNow = null, bigHeart = null, snapshotUrl = '';
     let lastVideoTime = -1, lastT = 0, startedAt = 0, clearedFrac = 0, fracT = 0;
     let skeleton = false, clean = false, ptr = null, hueBase = 0;
 
@@ -553,9 +553,25 @@
           if (inside) break;
         }
       }
-      if (heartNow && heartNow.inside) holdT += dt; else holdT = Math.max(0, holdT - dt * 1.5);
+      // ค้างท่าหัวใจ: ถ้ามือหลุดไปแป๊บเดียว (ระบบจับมือพลาดบางเฟรม) ยังไม่หักเวลา
+      if (heartNow && heartNow.inside) { holdT += dt; lostT = 0; }
+      else { lostT += dt; if (lostT > 0.6) holdT = Math.max(0, holdT - dt); }
       if (heartNow && Math.random() < dt * 10) {
         addPart({ k: 'twinkle', shape: 'sparkle', x: heartNow.screen.x + rand(-1, 1) * heartNow.scale, y: heartNow.screen.y + rand(-1, 1) * heartNow.scale, s: rand(14, 24) * U, color: '#FFFFFF', life: 0, max: 0.6, rot: 0 });
+      }
+      if (heartNow && heartNow.inside) {
+        // ยิ่งค้างนาน หัวใจลอยขึ้นจากมือยิ่งเยอะ และมีเสียงหัวใจเต้นตึกตัก
+        const p = Math.min(1, holdT / holdNeed);
+        if (Math.random() < dt * (2 + 12 * p)) {
+          addPart({
+            k: 'float', shape: 'heart',
+            x: heartNow.screen.x + rand(-1.1, 1.1) * heartNow.scale, y: heartNow.screen.y + rand(-0.4, 0.6) * heartNow.scale,
+            v: rand(80, 160) * U, s: rand(18, 34) * U, color: pick(['#FF7AA8', '#FF9EC4', '#FFB3CF', '#F58FB8', '#FFD1E3']),
+            life: 0, max: rand(1.6, 2.6), ph: rand(0, 6.28), rot: rand(-0.3, 0.3)
+          });
+        }
+        beatT -= dt;
+        if (beatT <= 0) { beatT = 0.95 - 0.35 * p; Sound.sfx.heartbeat(0.5 + 0.5 * p); }
       }
       if (holdT >= holdNeed) pass();
     }
@@ -570,7 +586,7 @@
       setTimeout(() => FX.rain(4, 70), 450);
       guide.classList.add('done');
       chip.hidden = true;
-      setTimeout(showSuccess, 1600);
+      setTimeout(showSuccess, 3000);
     }
     function takeSnapshot() {
       try {
@@ -706,7 +722,7 @@
       if (bigHeart) {
         const t = Math.max(0, (now - bigHeart.t0) / 1000);
         const grow = t < 0.6 ? 1 - Math.pow(1 - t / 0.6, 3) * Math.cos(t / 0.6 * Math.PI * 0.5) : 1;
-        const alpha = t < 1.3 ? 1 : Math.max(0, 1 - (t - 1.3) / 0.7);
+        const alpha = t < 2.6 ? 1 : Math.max(0, 1 - (t - 2.6) / 0.8);
         const s = Math.min(sw, sh) * 0.46 * grow * (1 + 0.03 * Math.sin(t * 9));
         if (alpha > 0 && s > 2) {
           g.save();
@@ -744,6 +760,7 @@
       const p = Math.min(1, holdT / holdNeed);
       guideRect.setAttribute('y', (24 - 24 * p).toFixed(2));
       guideRect.setAttribute('height', (24 * p).toFixed(2));
+      guide.style.setProperty('--p', p.toFixed(3));
       guide.classList.toggle('seen', !!heartNow);
       // ไม่มีข้อความสอน มีแค่แจ้งตอนระบบจับมือยังไม่พร้อมหรือโหลดไม่สำเร็จ
       if (mpFailed) say('โหลดระบบจับมือไม่สำเร็จ');
